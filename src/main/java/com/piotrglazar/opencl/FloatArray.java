@@ -23,4 +23,8 @@ public class FloatArray {
     public int getLength() {
         return data.length;
     }
+
+    public static FloatArray empty(int size) {
+        return new FloatArray(new float[size]);
+    }
 }

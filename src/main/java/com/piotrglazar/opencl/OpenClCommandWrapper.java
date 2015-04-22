@@ -1,13 +1,37 @@
 package com.piotrglazar.opencl;
 
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
 
+import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_SUCCESS;
+import static org.jocl.CL.clCreateCommandQueue;
+import static org.jocl.CL.clCreateContext;
 import static org.jocl.CL.clGetDeviceIDs;
 import static org.jocl.CL.clGetPlatformIDs;
+import static org.jocl.CL.clReleaseCommandQueue;
+import static org.jocl.CL.clReleaseContext;
 
 public class OpenClCommandWrapper {
+
+    public void releaseContext(cl_context context) {
+        verifyCallSucceeded(clReleaseContext(context), "clReleaseContext");
+    }
+
+    public cl_context getContext(cl_platform_id platformId, cl_device_id deviceId) {
+        int[] errorCode = new int[1];
+
+        cl_context_properties contextProperties = new cl_context_properties();
+        contextProperties.addProperty(CL_CONTEXT_PLATFORM, platformId);
+
+        cl_context context = clCreateContext(contextProperties, 1, new cl_device_id[]{deviceId}, null, null, errorCode);
+        verifyCallSucceeded(errorCode[0], "clCreateContext");
+
+        return context;
+    }
 
     public cl_device_id getDeviceId(cl_platform_id platformId, long deviceType, int deviceNumber) {
         int numberOfDevices = getNumberOfDevices(platformId, deviceType);
@@ -46,5 +70,18 @@ public class OpenClCommandWrapper {
         if (result != CL_SUCCESS) {
             throw new OpenClApiException(functionName, result);
         }
+    }
+
+    public cl_command_queue getCommandQueue(cl_context context, cl_device_id deviceId) {
+        int[] errorCode = new int[1];
+
+        cl_command_queue commandQueue = clCreateCommandQueue(context, deviceId, 0, errorCode);
+        verifyCallSucceeded(errorCode[0], "clCreateCommandQueue");
+
+        return commandQueue;
+    }
+
+    public void releaseCommandQueue(cl_command_queue commandQueue) {
+        verifyCallSucceeded(clReleaseCommandQueue(commandQueue), "clReleaseCommandQueue");
     }
 }
