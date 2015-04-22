@@ -1,0 +1,84 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'jacoco'
+apply plugin: 'sonar-runner'
+apply plugin: 'findbugs'
+apply plugin: 'checkstyle'
+apply plugin: 'pmd'
+apply plugin: 'com.github.kt3k.coveralls'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'org.jocl:jocl:0.1.9'
+	testCompile("junit:junit:4.12")
+    testCompile("org.mockito:mockito-all:2.0.2-beta")
+    testCompile("org.assertj:assertj-core:1.7.1")
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+jacoco {
+    toolVersion = '0.7.4.+'
+}
+
+jacocoTestReport {
+    reports {
+        html.destination "$buildDir/reports/jacoco"
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
+sonarRunner {
+    toolVersion = '2.4'
+}
+
+sourceCompatibility = 1.8
+
+
+checkstyle {
+    toolVersion = '6.3'
+    ignoreFailures = true
+}
+
+pmd {
+    ignoreFailures = true
+}
+
+findbugs {
+    toolVersion = '3.0.0'
+    effort = 'max'
+    ignoreFailures = true
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
