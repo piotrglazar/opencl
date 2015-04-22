@@ -20,9 +20,7 @@ import org.jocl.cl_program;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.List;
-import java.util.Scanner;
 
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
@@ -39,9 +37,7 @@ import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clCreateProgramWithSource;
 import static org.jocl.CL.clEnqueueNDRangeKernel;
 import static org.jocl.CL.clEnqueueReadBuffer;
-import static org.jocl.CL.clGetDeviceIDs;
 import static org.jocl.CL.clGetEventProfilingInfo;
-import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clGetProgramBuildInfo;
 import static org.jocl.CL.clReleaseCommandQueue;
 import static org.jocl.CL.clReleaseContext;
@@ -61,29 +57,28 @@ public class KernelDensityEstimation {
     public static final float PI_FACTOR = (float) (1 / Math.sqrt(2 * 3.141592653589793f));
 
     public static void main(String[] args) throws URISyntaxException, IOException {
-        URL sample = Resources.getResource("sample/samp4");
-        Scanner sampleScanner = new Scanner(new File(sample.toURI()));
         int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
 
-        float[] input = readInput(sampleScanner);
+        FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
         float[] output = new float[outputWidth];
-        float factor = PI_FACTOR / input.length;
+        float factor = PI_FACTOR / input.getLength();
 
-        cl_platform_id platformId = getPlatformId();
-        cl_device_id deviceId = getDeviceId(platformId);
-        cl_context context = createContext(platformId, deviceId);
+        OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
+        OpelClMetadataFactory metadataFactory = new OpelClMetadataFactory(openClCommandWrapper);
+        OpenClMetadata metadata = metadataFactory.createMetadata();
+
+        cl_context context = createContext(metadata.getPlatformId(), metadata.getDeviceId());
 
         /////////////////////////////////////////////////////////////////
         // Create an OpenCL command queue
         /////////////////////////////////////////////////////////////////
-        cl_command_queue commandQueue = createCommandQueue(context, deviceId);
+        cl_command_queue commandQueue = createCommandQueue(context, metadata.getDeviceId());
 
         /////////////////////////////////////////////////////////////////
         // Create OpenCL memory buffers
         /////////////////////////////////////////////////////////////////
-        Pointer inputPointer = Pointer.to(input);
-        cl_mem inputGpu = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_float * input.length,
-                inputPointer, null);
+        cl_mem inputGpu = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_float * input.getLength(),
+                input.getDataPointer(), null);
         Pointer outputPointer = Pointer.to(output);
         cl_mem outputGpu = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_float * output.length,
                 outputPointer, null);
@@ -106,7 +101,7 @@ public class KernelDensityEstimation {
         if (ret != CL_SUCCESS) {
             System.out.println("wrong program " + ret);
             byte[] buffer = new byte[2048];
-            clGetProgramBuildInfo(program, deviceId, CL_PROGRAM_BUILD_LOG, buffer.length * Sizeof.cl_char, Pointer.to(buffer), null);
+            clGetProgramBuildInfo(program, metadata.getDeviceId(), CL_PROGRAM_BUILD_LOG, buffer.length * Sizeof.cl_char, Pointer.to(buffer), null);
             System.out.println(new String(buffer, Charsets.UTF_8));
         }
 
@@ -165,7 +160,7 @@ public class KernelDensityEstimation {
 //        CL_SUCCESS, "Error: Setting kernel argument. (h)\n");
 
     /* input size */
-        clSetKernelArg(kernel, 6, Sizeof.cl_int, Pointer.to(new int[]{input.length}));
+        clSetKernelArg(kernel, 6, Sizeof.cl_int, Pointer.to(new int[]{input.getLength()}));
 //        check(clSetKernelArg(kernel, 6, sizeof(int), static_cast<void *>(&inputWidth)),
 //        CL_SUCCESS, "Error: Setting kernel argument. (input size)\n");
 
@@ -220,7 +215,7 @@ public class KernelDensityEstimation {
 //                0, NULL, NULL), CL_SUCCESS, "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)\n");
 //
 //
-        dumpArray(factor, input, output);
+        dumpArray(factor, input.getData(), output);
 
         clReleaseMemObject(outputGpu);
         clReleaseMemObject(inputGpu);
@@ -235,17 +230,18 @@ public class KernelDensityEstimation {
         float eps = 0.00001f;
         int ok = 0;
         for (int i = 0; i < 10; ++i) {
-            float sum = 0.0f;
-            for (int j = 0; j < input.length; ++j) {
-                sum += Math.exp(-0.5f * Math.pow(((x - input[j]) / H), 2));
-                float result = Math.abs(output[i] - ((factor * sum) / H));
-                if (result < eps) {
-                    ++ok;
-                }
-                x += DENSITY;
-            }
+//            float sum = 0.0f;
+//            for (int j = 0; j < input.length; ++j) {
+//                sum += Math.exp(-0.5f * Math.pow(((x - input[j]) / H), 2));
+//                float result = Math.abs(output[i] - ((factor * sum) / H));
+//                if (result < eps) {
+//                    ++ok;
+//                }
+//                x += DENSITY;
+//            }
+            System.out.println(output[i]);
         }
-        System.out.println("percentage of valid answers: " + (ok / 10));
+//        System.out.println("percentage of valid answers: " + (ok / 10));
     }
 
     private static String[] getKernelSourceCode() throws IOException, URISyntaxException {
@@ -259,35 +255,6 @@ public class KernelDensityEstimation {
         return clCreateCommandQueue(context, deviceId, 0, null);
     }
 
-    private static cl_platform_id getPlatformId() {
-        int platformIndex = 0;
-
-        // Obtain the number of platforms
-        int numPlatformsArray[] = new int[1];
-        clGetPlatformIDs(0, null, numPlatformsArray);
-        int numPlatforms = numPlatformsArray[0];
-
-        // Obtain a platform ID
-        cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
-        clGetPlatformIDs(platforms.length, platforms, null);
-        return platforms[platformIndex];
-    }
-
-    private static cl_device_id getDeviceId(cl_platform_id platform) {
-        int deviceIndex = 0;
-        long deviceType = CL.CL_DEVICE_TYPE_GPU;
-
-        // Obtain the number of devices for the platform
-        int numDevicesArray[] = new int[1];
-        clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
-        int numDevices = numDevicesArray[0];
-
-        // Obtain a device ID
-        cl_device_id devices[] = new cl_device_id[numDevices];
-        clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
-        return devices[deviceIndex];
-    }
-
     private static cl_context createContext(cl_platform_id platform, cl_device_id device) {
         // Initialize the context properties
         cl_context_properties contextProperties = new cl_context_properties();
@@ -295,17 +262,5 @@ public class KernelDensityEstimation {
 
         return clCreateContext(contextProperties, 1, new cl_device_id[]{device},
                 null, null, null);
-    }
-
-    private static float[] readInput(Scanner sampleScanner) {
-        int size = sampleScanner.nextInt();
-        float[] result = new float[size];
-
-        for (int i = 0; i < size; ++i) {
-            String raw = sampleScanner.next();
-            result[i] = Float.parseFloat(raw);
-        }
-
-        return result;
     }
 }
