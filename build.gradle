@@ -21,7 +21,9 @@ repositories {
 }
 
 dependencies {
-    compile 'org.jocl:jocl:0.1.9'
+    compile("com.google.guava:guava:18.0")
+    compile("org.jocl:jocl:0.1.9")
+
 	testCompile("junit:junit:4.12")
     testCompile("org.mockito:mockito-all:2.0.2-beta")
     testCompile("org.assertj:assertj-core:1.7.1")
