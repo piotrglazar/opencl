@@ -55,8 +55,8 @@ public class KernelDensityEstimation {
     /*
      * Enqueue a kernel run call.
      */
-            cl_event[] events = new cl_event[]{new cl_event()};
-            int ret2 = clEnqueueNDRangeKernel(commandQueue.getCommandQueue(), kernel.getKernel(), 1, null, new long[]{outputWidth}, new long[]{1}, 0, events, null);
+            cl_event event = new cl_event();
+            int ret2 = clEnqueueNDRangeKernel(commandQueue.getCommandQueue(), kernel.getKernel(), 1, null, new long[]{outputWidth}, new long[]{1}, 0, null, event);
             if (ret2 != CL.CL_SUCCESS) {
                 System.out.println(ret2);
             }
@@ -66,17 +66,16 @@ public class KernelDensityEstimation {
 
 
     /* wait for the kernel call to finish execution */
-            clWaitForEvents(1, events);
+            clWaitForEvents(1, new cl_event[]{event});
 //        check(clWaitForEvents(1, &events[0]), CL_SUCCESS, "Error: Waiting for kernel run to finish. (clWaitForEvents)\n");
 
 
     /* profilling info */
             long[] start = new long[1];
             long[] stop = new long[1];
-            clGetEventProfilingInfo(events[0], CL.CL_PROFILING_COMMAND_START, Sizeof.cl_ulong, Pointer.to(start), null);
-            clGetEventProfilingInfo(events[0], CL.CL_PROFILING_COMMAND_END, Sizeof.cl_ulong, Pointer.to(stop), null);
-            System.out.println(start[0]);
-            System.out.println(stop[0]);
+            clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_START, Sizeof.cl_ulong, Pointer.to(start), null);
+            clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_END, Sizeof.cl_ulong, Pointer.to(stop), null);
+            System.out.println("" + (stop[0] - start[0]) / 1e6 + " ms");
 //        cl_ulong startTime, finishTime;
 //
 //        check(clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL),
@@ -88,7 +87,7 @@ public class KernelDensityEstimation {
 //                << (finishTime - startTime) / 1000000 << std::endl;
 //
 //        check(clReleaseEvent(events[0]), CL_SUCCESS, "Error: Release event object. (clReleaseEvent)\n");
-            clReleaseEvent(events[0]);
+            clReleaseEvent(event);
 
     /* Enqueue readBuffer*/
             clEnqueueReadBuffer(commandQueue.getCommandQueue(), outputGpu.getMemoryBuffer(), CL_TRUE, 0, outputWidth * Sizeof.cl_float, output.getDataPointer(), 0, null, null);

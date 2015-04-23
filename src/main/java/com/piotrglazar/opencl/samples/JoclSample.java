@@ -1,4 +1,4 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.samples;
 
 import org.jocl.CL;
 import org.jocl.Pointer;

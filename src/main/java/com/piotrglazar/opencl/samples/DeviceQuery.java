@@ -1,4 +1,4 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.samples;
 
 import org.jocl.Pointer;
 import org.jocl.Sizeof;

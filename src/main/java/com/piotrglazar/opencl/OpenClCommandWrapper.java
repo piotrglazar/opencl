@@ -15,6 +15,7 @@ import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
 import static org.jocl.CL.CL_MEM_READ_ONLY;
 import static org.jocl.CL.CL_MEM_WRITE_ONLY;
+import static org.jocl.CL.CL_QUEUE_PROFILING_ENABLE;
 import static org.jocl.CL.CL_SUCCESS;
 import static org.jocl.CL.clBuildProgram;
 import static org.jocl.CL.clCreateBuffer;
@@ -109,10 +110,10 @@ public class OpenClCommandWrapper {
         }
     }
 
-    public cl_command_queue getCommandQueue(cl_context context, cl_device_id deviceId) {
+    public cl_command_queue createCommandQueue(cl_context context, cl_device_id deviceId) {
         int[] errorCode = new int[1];
 
-        cl_command_queue commandQueue = clCreateCommandQueue(context, deviceId, 0, errorCode);
+        cl_command_queue commandQueue = clCreateCommandQueue(context, deviceId, CL_QUEUE_PROFILING_ENABLE, errorCode);
         verifyCallSucceeded(errorCode[0], "clCreateCommandQueue");
 
         return commandQueue;

@@ -11,7 +11,7 @@ public class OpenClCommandQueue implements AutoCloseable {
 
     public OpenClCommandQueue(OpenClCommandWrapper commandWrapper, cl_context context, cl_device_id deviceId) {
         this.commandWrapper = commandWrapper;
-        this.commandQueue = commandWrapper.getCommandQueue(context, deviceId);
+        this.commandQueue = commandWrapper.createCommandQueue(context, deviceId);
     }
 
     public cl_command_queue getCommandQueue() {
