@@ -6,6 +6,7 @@ import org.jocl.cl_command_queue;
 import org.jocl.cl_context;
 import org.jocl.cl_context_properties;
 import org.jocl.cl_device_id;
+import org.jocl.cl_kernel;
 import org.jocl.cl_mem;
 import org.jocl.cl_platform_id;
 import org.jocl.cl_program;
@@ -19,13 +20,16 @@ import static org.jocl.CL.clBuildProgram;
 import static org.jocl.CL.clCreateBuffer;
 import static org.jocl.CL.clCreateCommandQueue;
 import static org.jocl.CL.clCreateContext;
+import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clCreateProgramWithSource;
 import static org.jocl.CL.clGetDeviceIDs;
 import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clReleaseCommandQueue;
 import static org.jocl.CL.clReleaseContext;
+import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
+import static org.jocl.CL.clSetKernelArg;
 
 public class OpenClCommandWrapper {
 
@@ -132,5 +136,33 @@ public class OpenClCommandWrapper {
 
     public void releaseProgram(cl_program program) {
         verifyCallSucceeded(clReleaseProgram(program), "clReleaseProgram");
+    }
+
+    public cl_kernel createKernel(cl_program program, String kernelName) {
+        int[] errorCode = new int[1];
+        cl_kernel kernel = clCreateKernel(program, kernelName, errorCode);
+
+        verifyCallSucceeded(errorCode[0], "clCreateKernel");
+
+        return kernel;
+    }
+
+    public void releaseKernel(cl_kernel kernel) {
+        verifyCallSucceeded(clReleaseKernel(kernel), "clReleaseKernel");
+    }
+
+    public void addKernelArgument(cl_kernel kernel, int argumentNumber, FloatBuffer buffer) {
+        verifyCallSucceeded(clSetKernelArg(kernel, argumentNumber, Sizeof.cl_mem,
+                Pointer.to(buffer.getMemoryBuffer())), "clSetKernelArg");
+    }
+
+    public void addKernelArgument(cl_kernel kernel, int argumentNumber, float value) {
+        verifyCallSucceeded(clSetKernelArg(kernel, argumentNumber, Sizeof.cl_float,
+                Pointer.to(new float[]{ value })), "clSetKernelArg");
+    }
+
+    public void addKernelArgument(cl_kernel kernel, int argumentNumber, int value) {
+        verifyCallSucceeded(clSetKernelArg(kernel, argumentNumber, Sizeof.cl_int,
+                Pointer.to(new int[]{ value })), "clSetKernelArg");
     }
 }

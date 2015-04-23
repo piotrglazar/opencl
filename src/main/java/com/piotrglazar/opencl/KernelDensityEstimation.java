@@ -4,19 +4,15 @@ import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_event;
-import org.jocl.cl_kernel;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 
 import static org.jocl.CL.CL_TRUE;
-import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clEnqueueNDRangeKernel;
 import static org.jocl.CL.clEnqueueReadBuffer;
 import static org.jocl.CL.clGetEventProfilingInfo;
 import static org.jocl.CL.clReleaseEvent;
-import static org.jocl.CL.clReleaseKernel;
-import static org.jocl.CL.clSetKernelArg;
 import static org.jocl.CL.clWaitForEvents;
 
 public class KernelDensityEstimation {
@@ -30,7 +26,7 @@ public class KernelDensityEstimation {
     public static void main(String[] args) throws URISyntaxException, IOException {
         int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
 
-        OpenClKernelSource kernel = OpenClKernelSource.getKernelSourceCode("kernel/kde_naive.cl");
+        OpenClKernelSource kernelSource = OpenClKernelSource.getKernelSourceCode("kernel/kde_naive.cl");
         FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
         FloatArray output = FloatArray.empty(outputWidth);
         float factor = PI_FACTOR / input.getLength();
@@ -43,68 +39,24 @@ public class KernelDensityEstimation {
                 OpenClCommandQueue commandQueue = getOpenClCommandQueue(openClCommandWrapper, metadata, context);
                 FloatBuffer inputGpu = FloatBuffer.inputBuffer(openClCommandWrapper, context, input);
                 FloatBuffer outputGpu = FloatBuffer.outputBuffer(openClCommandWrapper, context, output);
-                OpenClProgram program = new OpenClProgram(openClCommandWrapper, context, kernel)) {
-
-            int[] errorCode = new int[1];
-
-    /* get a kernel object handle for a kernel with the given name */
-//        kernel = clCreateKernel(program, "templateKernel", &status);
-//        check(status, CL_SUCCESS, "Error: Creating Kernel from program. (clCreateKernel)\n");
-//
-//        return 0;
-
-            cl_kernel clKernel = clCreateKernel(program.getProgram(), "templateKernel", errorCode);
-
-            clSetKernelArg(clKernel, 0, Sizeof.cl_mem, Pointer.to(inputGpu.getMemoryBuffer()));
-//        check(clSetKernelArg(kernel, 0, sizeof(cl_mem), static_cast<void*>(&inputBuffer)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (input)\n");
+                OpenClProgram program = new OpenClProgram(openClCommandWrapper, context, kernelSource);
+                OpenClKernel kernel = new OpenClKernel(openClCommandWrapper, program, "kernelDensityEstimation")) {
 
 
-    /* the output array to the kernel */
-            clSetKernelArg(clKernel, 1, Sizeof.cl_mem, Pointer.to(outputGpu.getMemoryBuffer()));
-//        check(clSetKernelArg(kernel, 1, sizeof(cl_mem), static_cast<void *>(&outputBuffer)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (output)\n");
-
-
-    /* xmin */
-            clSetKernelArg(clKernel, 2, Sizeof.cl_float, Pointer.to(new float[]{X_MIN}));
-//        check(clSetKernelArg(kernel, 2, sizeof(cl_float), static_cast<void *>(&xmin)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (xmin)\n");
-
-
-    /* factor */
-            clSetKernelArg(clKernel, 3, Sizeof.cl_float, Pointer.to(new float[]{factor}));
-//        check(clSetKernelArg(kernel, 3, sizeof(cl_float), static_cast<void *>(&factor)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (factor)\n");
-
-
-    /* den */
-            clSetKernelArg(clKernel, 4, Sizeof.cl_float, Pointer.to(new float[]{DENSITY}));
-//        check(clSetKernelArg(kernel, 4, sizeof(cl_float), static_cast<void *>(&den)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (den)\n");
-
-    /* h */
-            clSetKernelArg(clKernel, 5, Sizeof.cl_float, Pointer.to(new float[]{H}));
-//        check(clSetKernelArg(kernel, 5, sizeof(cl_float), static_cast<void *>(&h)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (h)\n");
-
-    /* input size */
-            clSetKernelArg(clKernel, 6, Sizeof.cl_int, Pointer.to(new int[]{input.getLength()}));
-//        check(clSetKernelArg(kernel, 6, sizeof(int), static_cast<void *>(&inputWidth)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (input size)\n");
-
-    /* output size */
-            clSetKernelArg(clKernel, 7, Sizeof.cl_int, Pointer.to(new int[]{outputWidth}));
-//        check(clSetKernelArg(kernel, 7, sizeof(int), static_cast<void *>(&outputWidth)),
-//        CL_SUCCESS, "Error: Setting kernel argument. (output size)\n");
-
-
+            kernel.addKernelArgument(0, inputGpu);
+            kernel.addKernelArgument(1, outputGpu);
+            kernel.addKernelArgument(2, X_MIN);
+            kernel.addKernelArgument(3, factor);
+            kernel.addKernelArgument(4, DENSITY);
+            kernel.addKernelArgument(5, H);
+            kernel.addKernelArgument(6, input.getLength());
+            kernel.addKernelArgument(7, outputWidth);
 
     /*
      * Enqueue a kernel run call.
      */
             cl_event[] events = new cl_event[]{new cl_event()};
-            int ret2 = clEnqueueNDRangeKernel(commandQueue.getCommandQueue(), clKernel, 1, null, new long[]{outputWidth}, new long[]{1}, 0, events, null);
+            int ret2 = clEnqueueNDRangeKernel(commandQueue.getCommandQueue(), kernel.getKernel(), 1, null, new long[]{outputWidth}, new long[]{1}, 0, events, null);
             if (ret2 != CL.CL_SUCCESS) {
                 System.out.println(ret2);
             }
@@ -146,7 +98,6 @@ public class KernelDensityEstimation {
 //
             dumpArray(factor, input.getData(), output.getData());
 
-            clReleaseKernel(clKernel);
         }
     }
 

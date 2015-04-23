@@ -1,4 +1,4 @@
-__kernel void templateKernel(const __global float *input, __global  float *output, const float xmin, 
+__kernel void kernelDensityEstimation(const __global float *input, __global  float *output, const float xmin,
                 const float factor, const float den, const float h, const int inputSize, const int outputSize)
 {
     int id = get_global_id(0);
