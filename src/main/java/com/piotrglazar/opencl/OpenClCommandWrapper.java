@@ -6,6 +6,7 @@ import org.jocl.cl_command_queue;
 import org.jocl.cl_context;
 import org.jocl.cl_context_properties;
 import org.jocl.cl_device_id;
+import org.jocl.cl_event;
 import org.jocl.cl_kernel;
 import org.jocl.cl_mem;
 import org.jocl.cl_platform_id;
@@ -23,6 +24,7 @@ import static org.jocl.CL.clCreateCommandQueue;
 import static org.jocl.CL.clCreateContext;
 import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clCreateProgramWithSource;
+import static org.jocl.CL.clEnqueueNDRangeKernel;
 import static org.jocl.CL.clGetDeviceIDs;
 import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clReleaseCommandQueue;
@@ -31,6 +33,7 @@ import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
+import static org.jocl.CL.clWaitForEvents;
 
 public class OpenClCommandWrapper {
 
@@ -165,5 +168,16 @@ public class OpenClCommandWrapper {
     public void addKernelArgument(cl_kernel kernel, int argumentNumber, int value) {
         verifyCallSucceeded(clSetKernelArg(kernel, argumentNumber, Sizeof.cl_int,
                 Pointer.to(new int[]{ value })), "clSetKernelArg");
+    }
+
+    public cl_event enqueue(cl_command_queue commandQueue, cl_kernel kernel, int globalThreads) {
+        cl_event event = new cl_event();
+        verifyCallSucceeded(clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, new long[]{globalThreads},
+                new long[]{1}, 0, null, event), "clEnqueueNDRangeKernel");
+        return event;
+    }
+
+    public void waitForEvents(cl_event... events) {
+        verifyCallSucceeded(clWaitForEvents(events.length, events), "clWaitForEvents");
     }
 }

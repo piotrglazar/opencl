@@ -9,11 +9,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import static org.jocl.CL.CL_TRUE;
-import static org.jocl.CL.clEnqueueNDRangeKernel;
 import static org.jocl.CL.clEnqueueReadBuffer;
 import static org.jocl.CL.clGetEventProfilingInfo;
 import static org.jocl.CL.clReleaseEvent;
-import static org.jocl.CL.clWaitForEvents;
 
 public class KernelDensityEstimation {
 
@@ -52,30 +50,16 @@ public class KernelDensityEstimation {
             kernel.addKernelArgument(6, input.getLength());
             kernel.addKernelArgument(7, outputWidth);
 
-    /*
-     * Enqueue a kernel run call.
-     */
-            cl_event event = new cl_event();
-            int ret2 = clEnqueueNDRangeKernel(commandQueue.getCommandQueue(), kernel.getKernel(), 1, null, new long[]{outputWidth}, new long[]{1}, 0, null, event);
-            if (ret2 != CL.CL_SUCCESS) {
-                System.out.println(ret2);
-            }
-//        check(clEnqueueNDRangeKernel(commandQueue, kernel, 1, /* number of dimensions */ NULL, globalThreads,
-//                localThreads, 0, NULL, &events[0]), CL_SUCCESS, "Error: Enqueueing kernel onto command queue. (clEnqueueNDRangeKernel)\n");
+            OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
 
-
-
-    /* wait for the kernel call to finish execution */
-            clWaitForEvents(1, new cl_event[]{event});
-//        check(clWaitForEvents(1, &events[0]), CL_SUCCESS, "Error: Waiting for kernel run to finish. (clWaitForEvents)\n");
-
+            cl_event event = executor.submitAndWait(commandQueue, kernel, outputWidth);
 
     /* profilling info */
             long[] start = new long[1];
             long[] stop = new long[1];
             clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_START, Sizeof.cl_ulong, Pointer.to(start), null);
             clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_END, Sizeof.cl_ulong, Pointer.to(stop), null);
-            System.out.println("" + (stop[0] - start[0]) / 1e6 + " ms");
+            System.out.println("Total: " + (stop[0] - start[0]) / 1e6 + " ms");
 //        cl_ulong startTime, finishTime;
 //
 //        check(clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL),
