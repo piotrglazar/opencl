@@ -58,7 +58,7 @@ public class KernelDensityEstimation {
             executor.releaseEvent(event);
             executor.copyFromGpuToMemory(commandQueue, outputGpu, output);
 
-            dumpArray(kernelSource.getName(), output.getData());
+            dumpArray(kernelSource.getName(), output.getData(), false);
         }
     }
 
@@ -71,14 +71,16 @@ public class KernelDensityEstimation {
         return new OpenClContext(openClCommandWrapper, metadata.getPlatformId(), metadata.getDeviceId());
     }
 
-    private static void dumpArray(String kernelName, float[] output) {
+    private static void dumpArray(String kernelName, float[] output, boolean shouldDump) {
         String path = "dump" + output.length + kernelName + ".txt";
 
-        List<String> outputValues = Floats.asList(output).stream().map(Object::toString).collect(toList());
-        try {
-            Files.write(Paths.get("C:", "tmp", path), outputValues, Charsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (shouldDump) {
+            List<String> outputValues = Floats.asList(output).stream().map(Object::toString).collect(toList());
+            try {
+                Files.write(Paths.get("C:", "tmp", path), outputValues, Charsets.UTF_8);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
 
