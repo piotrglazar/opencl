@@ -1,12 +1,20 @@
 package com.piotrglazar.opencl;
 
+import com.google.common.base.Charsets;
+import com.google.common.primitives.Floats;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class KernelDensityEstimation {
 
     public static final float X_MIN = 0;
-    public static final float X_MAX = 256; //1024;
+    public static final float X_MAX = 1024;
     public static final float H = 0.5f;
     public static final float DENSITY = 0.25f;
     public static final float PI_FACTOR = (float) (1 / Math.sqrt(2 * 3.141592653589793f));
@@ -14,7 +22,7 @@ public class KernelDensityEstimation {
     public static void main(String[] args) throws URISyntaxException, IOException {
         int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
 
-        OpenClKernelSource kernelSource = OpenClKernelSource.getKernelSourceCode("kernel/kde_naive.cl");
+        OpenClKernelSource kernelSource = OpenClKernelSource.getKernelSourceCode("kernel", "kde_naive");
         FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
         FloatArray output = FloatArray.empty(outputWidth);
         float factor = PI_FACTOR / input.getLength();
@@ -50,7 +58,7 @@ public class KernelDensityEstimation {
             executor.releaseEvent(event);
             executor.copyFromGpuToMemory(commandQueue, outputGpu, output);
 
-            dumpArray(factor, input.getData(), output.getData());
+            dumpArray(kernelSource.getName(), output.getData());
         }
     }
 
@@ -63,22 +71,19 @@ public class KernelDensityEstimation {
         return new OpenClContext(openClCommandWrapper, metadata.getPlatformId(), metadata.getDeviceId());
     }
 
-    private static void dumpArray(float factor, float[] input, float[] output) {
-        float x = X_MIN;
-        float eps = 0.00001f;
-        int ok = 0;
+    private static void dumpArray(String kernelName, float[] output) {
+        String path = "dump" + output.length + kernelName + ".txt";
+
+        List<String> outputValues = Floats.asList(output).stream().map(Object::toString).collect(toList());
+        try {
+            Files.write(Paths.get("C:", "tmp", path), outputValues, Charsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         for (int i = 0; i < 10; ++i) {
-//            float sum = 0.0f;
-//            for (int j = 0; j < input.length; ++j) {
-//                sum += Math.exp(-0.5f * Math.pow(((x - input[j]) / H), 2));
-//                float result = Math.abs(output[i] - ((factor * sum) / H));
-//                if (result < eps) {
-//                    ++ok;
-//                }
-//                x += DENSITY;
-//            }
             System.out.println(output[i]);
         }
-//        System.out.println("percentage of valid answers: " + (ok / 10));
     }
 }

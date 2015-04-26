@@ -14,20 +14,22 @@ import java.util.List;
 public class OpenClKernelSource {
 
     private final String[] kernelSourceCode;
+    private final String name;
 
-    private OpenClKernelSource(String[] kernelSourceCode) {
+    private OpenClKernelSource(String[] kernelSourceCode, String name) {
         this.kernelSourceCode = kernelSourceCode;
+        this.name = name;
     }
 
     public String[] getKernelSourceCode() {
         return kernelSourceCode;
     }
 
-    public static OpenClKernelSource getKernelSourceCode(String kernelFilePath) {
-        URL resource = getResource(kernelFilePath);
+    public static OpenClKernelSource getKernelSourceCode(String root, String fileName) {
+        URL resource = getResource(root + "/" + fileName + ".cl");
 
         List<String> kernelLines = getLines(resource);
-        return new OpenClKernelSource(new String[]{ Joiner.on("").join(kernelLines) });
+        return new OpenClKernelSource(new String[]{ Joiner.on("").join(kernelLines) }, fileName);
     }
 
     private static List<String> getLines(URL resource) {
@@ -40,5 +42,9 @@ public class OpenClKernelSource {
 
     private static URL getResource(String filePath) {
         return Thread.currentThread().getContextClassLoader().getResource(filePath);
+    }
+
+    public String getName() {
+        return name;
     }
 }

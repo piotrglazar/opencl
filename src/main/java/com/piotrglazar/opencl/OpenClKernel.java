@@ -6,10 +6,12 @@ public class OpenClKernel implements AutoCloseable {
 
     private final OpenClCommandWrapper commandWrapper;
     private final cl_kernel kernel;
+    private final String name;
 
     public OpenClKernel(OpenClCommandWrapper commandWrapper, OpenClProgram program, String kernelName) {
         this.commandWrapper = commandWrapper;
         this.kernel = commandWrapper.createKernel(program.getProgram(), kernelName);
+        this.name = kernelName;
     }
 
     public void addKernelArgument(int argumentNumber, FloatBuffer buffer) {
@@ -26,6 +28,10 @@ public class OpenClKernel implements AutoCloseable {
 
     public cl_kernel getKernel() {
         return kernel;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override
