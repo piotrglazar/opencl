@@ -1,5 +1,6 @@
 package com.piotrglazar.opencl;
 
+import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_command_queue;
@@ -18,6 +19,7 @@ import static org.jocl.CL.CL_MEM_READ_ONLY;
 import static org.jocl.CL.CL_MEM_WRITE_ONLY;
 import static org.jocl.CL.CL_QUEUE_PROFILING_ENABLE;
 import static org.jocl.CL.CL_SUCCESS;
+import static org.jocl.CL.CL_TRUE;
 import static org.jocl.CL.clBuildProgram;
 import static org.jocl.CL.clCreateBuffer;
 import static org.jocl.CL.clCreateCommandQueue;
@@ -25,10 +27,13 @@ import static org.jocl.CL.clCreateContext;
 import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clCreateProgramWithSource;
 import static org.jocl.CL.clEnqueueNDRangeKernel;
+import static org.jocl.CL.clEnqueueReadBuffer;
 import static org.jocl.CL.clGetDeviceIDs;
+import static org.jocl.CL.clGetEventProfilingInfo;
 import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clReleaseCommandQueue;
 import static org.jocl.CL.clReleaseContext;
+import static org.jocl.CL.clReleaseEvent;
 import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
@@ -167,7 +172,7 @@ public class OpenClCommandWrapper {
 
     public void addKernelArgument(cl_kernel kernel, int argumentNumber, int value) {
         verifyCallSucceeded(clSetKernelArg(kernel, argumentNumber, Sizeof.cl_int,
-                Pointer.to(new int[]{ value })), "clSetKernelArg");
+                Pointer.to(new int[]{value})), "clSetKernelArg");
     }
 
     public cl_event enqueue(cl_command_queue commandQueue, cl_kernel kernel, int globalThreads) {
@@ -179,5 +184,30 @@ public class OpenClCommandWrapper {
 
     public void waitForEvents(cl_event... events) {
         verifyCallSucceeded(clWaitForEvents(events.length, events), "clWaitForEvents");
+    }
+
+    public long getEventStart(cl_event event) {
+        return getEventData(event, CL.CL_PROFILING_COMMAND_START);
+    }
+
+    public long getEventEnd(cl_event event) {
+        return getEventData(event, CL.CL_PROFILING_COMMAND_END);
+    }
+
+    private long getEventData(cl_event event, int type) {
+        long[] value = new long[1];
+        verifyCallSucceeded(clGetEventProfilingInfo(event, type, Sizeof.cl_ulong,
+                Pointer.to(value), null), "clGetEventProfilingInfo");
+
+        return value[0];
+    }
+
+    public void releaseEvent(cl_event event) {
+        verifyCallSucceeded(clReleaseEvent(event), "clReleaseEvent");
+    }
+
+    public void copyFromGpuToMemory(cl_command_queue commandQueue, cl_mem gpuBuffer, int howMany, Pointer output) {
+        verifyCallSucceeded(clEnqueueReadBuffer(commandQueue, gpuBuffer, CL_TRUE, 0, howMany * Sizeof.cl_float,
+                output, 0, null, null), "clEnqueueReadBuffer");
     }
 }

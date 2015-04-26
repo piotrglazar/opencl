@@ -1,17 +1,7 @@
 package com.piotrglazar.opencl;
 
-import org.jocl.CL;
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-import org.jocl.cl_event;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
-
-import static org.jocl.CL.CL_TRUE;
-import static org.jocl.CL.clEnqueueReadBuffer;
-import static org.jocl.CL.clGetEventProfilingInfo;
-import static org.jocl.CL.clReleaseEvent;
 
 public class KernelDensityEstimation {
 
@@ -52,35 +42,15 @@ public class KernelDensityEstimation {
 
             OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
 
-            cl_event event = executor.submitAndWait(commandQueue, kernel, outputWidth);
+            OpenClEvent event = executor.submitAndWait(commandQueue, kernel, outputWidth);
 
-    /* profilling info */
-            long[] start = new long[1];
-            long[] stop = new long[1];
-            clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_START, Sizeof.cl_ulong, Pointer.to(start), null);
-            clGetEventProfilingInfo(event, CL.CL_PROFILING_COMMAND_END, Sizeof.cl_ulong, Pointer.to(stop), null);
-            System.out.println("Total: " + (stop[0] - start[0]) / 1e6 + " ms");
-//        cl_ulong startTime, finishTime;
-//
-//        check(clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL),
-//                CL_SUCCESS, "Error: eventProfillingInfo: startTime");
-//        check(clGetEventProfilingInfo(events[0], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &finishTime, NULL),
-//                CL_SUCCESS, "Error: eventProfillingInfo: finishTime");
-//
-//        std::cout << "Start time: "<< startTime << " finishTime " << finishTime << " execution time [ms] "
-//                << (finishTime - startTime) / 1000000 << std::endl;
-//
-//        check(clReleaseEvent(events[0]), CL_SUCCESS, "Error: Release event object. (clReleaseEvent)\n");
-            clReleaseEvent(event);
+            ProfilingData profilingData = executor.getProfilingData(event);
+            System.out.println("Total: " + (profilingData.getDuration()) / 1e6 + " ms");
 
-    /* Enqueue readBuffer*/
-            clEnqueueReadBuffer(commandQueue.getCommandQueue(), outputGpu.getMemoryBuffer(), CL_TRUE, 0, outputWidth * Sizeof.cl_float, output.getDataPointer(), 0, null, null);
-//        check(clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, outputWidth * sizeof(float), output,
-//                0, NULL, NULL), CL_SUCCESS, "Error: clEnqueueReadBuffer failed. (clEnqueueReadBuffer)\n");
-//
-//
+            executor.releaseEvent(event);
+            executor.copyFromGpuToMemory(commandQueue, outputGpu, output);
+
             dumpArray(factor, input.getData(), output.getData());
-
         }
     }
 

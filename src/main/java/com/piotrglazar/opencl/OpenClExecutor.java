@@ -10,10 +10,26 @@ public class OpenClExecutor {
         this.commandWrapper = commandWrapper;
     }
 
-    public cl_event submitAndWait(OpenClCommandQueue commandQueue, OpenClKernel kernel, int globalThreads) {
+    public OpenClEvent submitAndWait(OpenClCommandQueue commandQueue, OpenClKernel kernel, int globalThreads) {
         cl_event event = commandWrapper.enqueue(commandQueue.getCommandQueue(), kernel.getKernel(), globalThreads);
         commandWrapper.waitForEvents(event);
 
-        return event;
+        return new OpenClEvent(event);
+    }
+
+    public ProfilingData getProfilingData(OpenClEvent event) {
+        long start = commandWrapper.getEventStart(event.getEvent());
+        long end = commandWrapper.getEventEnd(event.getEvent());
+
+        return new ProfilingData(start, end);
+    }
+
+    public void releaseEvent(OpenClEvent event) {
+        commandWrapper.releaseEvent(event.getEvent());
+    }
+
+    public void copyFromGpuToMemory(OpenClCommandQueue commandQueue, FloatBuffer outputGpu, FloatArray output) {
+        commandWrapper.copyFromGpuToMemory(commandQueue.getCommandQueue(), outputGpu.getMemoryBuffer(),
+                output.getLength(), output.getDataPointer());
     }
 }
