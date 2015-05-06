@@ -5,11 +5,9 @@ import org.jocl.Pointer;
 public class FloatArray {
 
     private final float[] data;
-    private final Pointer dataPointer;
 
     public FloatArray(float[] data) {
         this.data = data;
-        this.dataPointer = Pointer.to(data);
     }
 
     public float[] getData() {
@@ -17,7 +15,7 @@ public class FloatArray {
     }
 
     public Pointer getDataPointer() {
-        return dataPointer;
+        return Pointer.to(data);
     }
 
     public int getLength() {

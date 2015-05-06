@@ -5,10 +5,12 @@ __kernel void kernelDensityEstimation(const __global float *input, __global  flo
     float x = (xmin + den * id);
     float tmp = 0.0f;
 
-    for (int i = 0; i < inputSize; ++i)
+    for (int i = 0; i < inputSize; ++i) {
         tmp += exp(-0.5f * pow(((x - input[i]) / h), 2));
-    tmp *= factor / h;
+    }
+    tmp = tmp * factor;
 
-    if (id < outputSize)
+    if (id < outputSize) {
         output[id] = tmp;
+    }
 }

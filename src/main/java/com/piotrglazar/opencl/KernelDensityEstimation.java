@@ -17,15 +17,17 @@ public class KernelDensityEstimation {
     public static final float X_MAX = 1024;
     public static final float H = 0.5f;
     public static final float DENSITY = 0.25f;
-    public static final float PI_FACTOR = (float) (1 / Math.sqrt(2 * 3.141592653589793f));
+    public static final float PI_FACTOR = (float) (1 / Math.sqrt(2 * Math.PI));
 
     public static void main(String[] args) throws URISyntaxException, IOException {
+        OpenClSettings.enableExceptions();
+
         int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
 
         OpenClKernelSource kernelSource = OpenClKernelSource.getKernelSourceCode("kernel", "kde_naive");
         FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
         FloatArray output = FloatArray.empty(outputWidth);
-        float factor = PI_FACTOR / input.getLength();
+        float factor = PI_FACTOR / input.getLength() * H;
 
         OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
         OpelClMetadataFactory metadataFactory = new OpelClMetadataFactory(openClCommandWrapper);
