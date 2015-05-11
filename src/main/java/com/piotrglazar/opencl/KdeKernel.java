@@ -2,5 +2,7 @@ package com.piotrglazar.opencl;
 
 public interface KdeKernel {
 
-    void execute(KdeContext kdeContext, OpenClContext context);
+    ProfilingData execute(KdeContext kdeContext, OpenClContext context, OpenClCommandQueue commandQueue);
+
+    String getName();
 }

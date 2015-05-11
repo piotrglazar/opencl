@@ -4,6 +4,7 @@ public class KdeContext {
 
     private final FloatBuffer inputGpu;
     private final FloatBuffer outputGpu;
+    private final FloatArray output;
     private final float xMin;
     private final float factor;
     private final float density;
@@ -11,10 +12,11 @@ public class KdeContext {
     private final int inputWidth;
     private final int outputWidth;
 
-    public KdeContext(FloatBuffer inputGpu, FloatBuffer outputGpu, float xMin, float factor, float density, float h,
+    public KdeContext(FloatBuffer inputGpu, FloatBuffer outputGpu, FloatArray output, float xMin, float factor, float density, float h,
                       int inputWidth, int outputWidth) {
         this.inputGpu = inputGpu;
         this.outputGpu = outputGpu;
+        this.output = output;
         this.xMin = xMin;
         this.factor = factor;
         this.density = density;
@@ -53,5 +55,9 @@ public class KdeContext {
 
     public int getOutputWidth() {
         return outputWidth;
+    }
+
+    public FloatArray getOutput() {
+        return output;
     }
 }

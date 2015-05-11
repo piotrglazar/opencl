@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -24,43 +25,31 @@ public class KernelDensityEstimation {
 
         int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
 
-        OpenClKernelSource kernelSource = OpenClKernelSource.getKernelSourceCode("kernel", "kde_naive");
         FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
         FloatArray output = FloatArray.empty(outputWidth);
         float factor = PI_FACTOR / input.getLength() * H;
 
         OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
+        OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
         OpelClMetadataFactory metadataFactory = new OpelClMetadataFactory(openClCommandWrapper);
         OpenClMetadata metadata = metadataFactory.createMetadata();
+
+        List<KdeKernel> kdeKernels = new LinkedList<>();
+        kdeKernels.add(new KdeNaiveKernel(openClCommandWrapper, executor));
 
         try (OpenClContext context = getOpenClContext(openClCommandWrapper, metadata);
                 OpenClCommandQueue commandQueue = getOpenClCommandQueue(openClCommandWrapper, metadata, context);
                 FloatBuffer inputGpu = FloatBuffer.inputBuffer(openClCommandWrapper, context, input);
-                FloatBuffer outputGpu = FloatBuffer.outputBuffer(openClCommandWrapper, context, output);
-                OpenClProgram program = new OpenClProgram(openClCommandWrapper, context, kernelSource);
-                OpenClKernel kernel = new OpenClKernel(openClCommandWrapper, program, "kernelDensityEstimation")) {
+                FloatBuffer outputGpu = FloatBuffer.outputBuffer(openClCommandWrapper, context, output)) {
 
+            KdeContext kdeContext = new KdeContext(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H, input.getLength(), outputWidth);
+            for (KdeKernel kdeKernel : kdeKernels) {
+                ProfilingData profilingData = kdeKernel.execute(kdeContext, context, commandQueue);
 
-            kernel.addKernelArgument(0, inputGpu);
-            kernel.addKernelArgument(1, outputGpu);
-            kernel.addKernelArgument(2, X_MIN);
-            kernel.addKernelArgument(3, factor);
-            kernel.addKernelArgument(4, DENSITY);
-            kernel.addKernelArgument(5, H);
-            kernel.addKernelArgument(6, input.getLength());
-            kernel.addKernelArgument(7, outputWidth);
+                System.out.println("Total: " + (profilingData.getDuration()) / 1e6 + " ms");
+                dumpArray(kdeKernel.getName(), output.getData(), false);
+            }
 
-            OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
-
-            OpenClEvent event = executor.submitAndWait(commandQueue, kernel, outputWidth);
-
-            ProfilingData profilingData = executor.getProfilingData(event);
-            System.out.println("Total: " + (profilingData.getDuration()) / 1e6 + " ms");
-
-            executor.releaseEvent(event);
-            executor.copyFromGpuToMemory(commandQueue, outputGpu, output);
-
-            dumpArray(kernelSource.getName(), output.getData(), false);
         }
     }
 
