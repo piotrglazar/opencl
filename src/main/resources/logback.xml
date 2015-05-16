@@ -1,0 +1,15 @@
+<configuration>
+
+    <appender name="MAIN" class="ch.qos.logback.core.FileAppender">
+        <file>opencl.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="MAIN"/>
+    </root>
+
+</configuration>

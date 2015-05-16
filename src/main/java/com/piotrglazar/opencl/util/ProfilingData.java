@@ -18,7 +18,7 @@ public class ProfilingData {
         return stop;
     }
 
-    public long getDuration() {
-        return stop - start;
+    public long getDurationMillis() {
+        return (long) ((stop - start) / 1e6);
     }
 }

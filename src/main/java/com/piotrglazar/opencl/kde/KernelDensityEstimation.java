@@ -13,8 +13,11 @@ import com.piotrglazar.opencl.util.FloatArray;
 import com.piotrglazar.opencl.util.FloatArrayReader;
 import com.piotrglazar.opencl.util.FloatBuffer;
 import com.piotrglazar.opencl.util.ProfilingData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -24,6 +27,8 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 public class KernelDensityEstimation {
+
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final float X_MIN = 0;
     public static final float X_MAX = 1024;
@@ -42,8 +47,7 @@ public class KernelDensityEstimation {
     }
 
     public void executeKernels(OpenClCommandWrapper commandWrapper, OpenClExecutor executor, OpenClMetadata metadata) {
-        List<KdeKernel> kdeKernels = new LinkedList<>();
-        kdeKernels.add(new KdeNaiveKernel(commandWrapper, executor));
+        logContextInformation();
 
         try (OpenClContext context = getOpenClContext(commandWrapper, metadata);
              OpenClCommandQueue commandQueue = getOpenClCommandQueue(commandWrapper, metadata, context);
@@ -52,14 +56,33 @@ public class KernelDensityEstimation {
 
             KdeContext kdeContext = new KdeContext(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H,
                     input.getLength(), output.getLength());
-            for (KdeKernel kdeKernel : kdeKernels) {
+            for (KdeKernel kdeKernel : getKernels(commandWrapper, executor)) {
                 ProfilingData profilingData = kdeKernel.execute(kdeContext, context, commandQueue);
 
-                System.out.println("Total: " + (profilingData.getDuration()) / 1e6 + " ms");
+                logExecutionInformation(kdeKernel, profilingData);
+                System.out.println("Total: " + profilingData.getDurationMillis() + " ms");
                 dumpArray(kdeKernel.getName(), output.getData(), false);
             }
-
         }
+    }
+
+    private void logContextInformation() {
+        logger.info("Context information:");
+        logger.info("xmin={}", X_MIN);
+        logger.info("xmax={}", X_MAX);
+        logger.info("density={}", DENSITY);
+        logger.info("h={}", H);
+        logger.info("outputWidth={}", output.getLength());
+    }
+
+    private List<KdeKernel> getKernels(OpenClCommandWrapper commandWrapper, OpenClExecutor executor) {
+        List<KdeKernel> kdeKernels = new LinkedList<>();
+        kdeKernels.add(new KdeNaiveKernel(commandWrapper, executor));
+        return kdeKernels;
+    }
+
+    private void logExecutionInformation(KdeKernel kdeKernel, ProfilingData profilingData) {
+        logger.info("Kernel name '{}', time {}ms", kdeKernel.getName(), profilingData.getDurationMillis());
     }
 
     public static void main(String[] args) throws URISyntaxException, IOException {
