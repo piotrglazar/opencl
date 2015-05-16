@@ -1,17 +1,17 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
 
 import static org.jocl.CL.CL_DEVICE_TYPE_GPU;
 
-public class OpelClMetadataFactory {
+public class OpenClMetadataFactory {
 
     private static final long DEVICE_TYPE = CL_DEVICE_TYPE_GPU;
 
     private final OpenClCommandWrapper openClCommandWrapper;
 
-    public OpelClMetadataFactory(OpenClCommandWrapper openClCommandWrapper) {
+    public OpenClMetadataFactory(OpenClCommandWrapper openClCommandWrapper) {
         this.openClCommandWrapper = openClCommandWrapper;
     }
 

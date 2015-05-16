@@ -1,4 +1,4 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
 public class OpenClApiException extends RuntimeException {
 

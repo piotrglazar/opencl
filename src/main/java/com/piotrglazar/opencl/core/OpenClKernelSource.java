@@ -1,4 +1,4 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;

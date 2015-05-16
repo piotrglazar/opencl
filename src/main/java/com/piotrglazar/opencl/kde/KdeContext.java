@@ -1,4 +1,7 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.kde;
+
+import com.piotrglazar.opencl.util.FloatArray;
+import com.piotrglazar.opencl.util.FloatBuffer;
 
 public class KdeContext {
 

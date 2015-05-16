@@ -1,5 +1,6 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
+import com.piotrglazar.opencl.util.FloatBuffer;
 import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;

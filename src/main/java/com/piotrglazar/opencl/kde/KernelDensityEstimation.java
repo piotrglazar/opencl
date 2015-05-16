@@ -1,7 +1,18 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.kde;
 
 import com.google.common.base.Charsets;
 import com.google.common.primitives.Floats;
+import com.piotrglazar.opencl.core.OpenClMetadataFactory;
+import com.piotrglazar.opencl.core.OpenClCommandQueue;
+import com.piotrglazar.opencl.core.OpenClCommandWrapper;
+import com.piotrglazar.opencl.core.OpenClContext;
+import com.piotrglazar.opencl.core.OpenClExecutor;
+import com.piotrglazar.opencl.core.OpenClMetadata;
+import com.piotrglazar.opencl.core.OpenClSettings;
+import com.piotrglazar.opencl.util.FloatArray;
+import com.piotrglazar.opencl.util.FloatArrayReader;
+import com.piotrglazar.opencl.util.FloatBuffer;
+import com.piotrglazar.opencl.util.ProfilingData;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -31,7 +42,7 @@ public class KernelDensityEstimation {
 
         OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
         OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
-        OpelClMetadataFactory metadataFactory = new OpelClMetadataFactory(openClCommandWrapper);
+        OpenClMetadataFactory metadataFactory = new OpenClMetadataFactory(openClCommandWrapper);
         OpenClMetadata metadata = metadataFactory.createMetadata();
 
         List<KdeKernel> kdeKernels = new LinkedList<>();

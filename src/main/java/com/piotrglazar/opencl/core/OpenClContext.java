@@ -1,4 +1,4 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
 import org.jocl.cl_context;
 import org.jocl.cl_device_id;

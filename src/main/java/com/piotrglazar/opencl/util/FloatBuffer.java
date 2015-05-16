@@ -1,5 +1,7 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.util;
 
+import com.piotrglazar.opencl.core.OpenClCommandWrapper;
+import com.piotrglazar.opencl.core.OpenClContext;
 import org.jocl.cl_mem;
 
 public class FloatBuffer implements AutoCloseable {

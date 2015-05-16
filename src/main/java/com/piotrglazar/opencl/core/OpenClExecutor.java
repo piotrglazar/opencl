@@ -1,5 +1,8 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
+import com.piotrglazar.opencl.util.FloatArray;
+import com.piotrglazar.opencl.util.FloatBuffer;
+import com.piotrglazar.opencl.util.ProfilingData;
 import org.jocl.cl_event;
 
 public class OpenClExecutor {

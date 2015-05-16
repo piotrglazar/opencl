@@ -1,4 +1,14 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.kde;
+
+import com.piotrglazar.opencl.core.OpenClCommandQueue;
+import com.piotrglazar.opencl.core.OpenClCommandWrapper;
+import com.piotrglazar.opencl.core.OpenClContext;
+import com.piotrglazar.opencl.core.OpenClEvent;
+import com.piotrglazar.opencl.core.OpenClExecutor;
+import com.piotrglazar.opencl.core.OpenClKernel;
+import com.piotrglazar.opencl.core.OpenClKernelSource;
+import com.piotrglazar.opencl.core.OpenClProgram;
+import com.piotrglazar.opencl.util.ProfilingData;
 
 public class KdeNaiveKernel implements KdeKernel {
 

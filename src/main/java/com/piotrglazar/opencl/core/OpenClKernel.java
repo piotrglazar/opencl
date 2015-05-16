@@ -1,5 +1,6 @@
-package com.piotrglazar.opencl;
+package com.piotrglazar.opencl.core;
 
+import com.piotrglazar.opencl.util.FloatBuffer;
 import org.jocl.cl_kernel;
 
 public class OpenClKernel implements AutoCloseable {
