@@ -27,33 +27,31 @@ public class KernelDensityEstimation {
 
     public static final float X_MIN = 0;
     public static final float X_MAX = 1024;
-    public static final float H = 0.5f;
-    public static final float DENSITY = 0.25f;
+    public static final float H = 1f;
+    public static final float DENSITY = 1f;
     public static final float PI_FACTOR = (float) (1 / Math.sqrt(2 * Math.PI));
 
-    public static void main(String[] args) throws URISyntaxException, IOException {
-        OpenClSettings.enableExceptions();
+    private final FloatArray input;
+    private final FloatArray output;
+    private final float factor;
 
-        int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
+    public KernelDensityEstimation(FloatArray input, FloatArray output, float factor) {
+        this.input = input;
+        this.output = output;
+        this.factor = factor;
+    }
 
-        FloatArray input = new FloatArrayReader().read("sample/big_sample.txt");
-        FloatArray output = FloatArray.empty(outputWidth);
-        float factor = PI_FACTOR / input.getLength() * H;
-
-        OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
-        OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
-        OpenClMetadataFactory metadataFactory = new OpenClMetadataFactory(openClCommandWrapper);
-        OpenClMetadata metadata = metadataFactory.createMetadata();
-
+    public void executeKernels(OpenClCommandWrapper commandWrapper, OpenClExecutor executor, OpenClMetadata metadata) {
         List<KdeKernel> kdeKernels = new LinkedList<>();
-        kdeKernels.add(new KdeNaiveKernel(openClCommandWrapper, executor));
+        kdeKernels.add(new KdeNaiveKernel(commandWrapper, executor));
 
-        try (OpenClContext context = getOpenClContext(openClCommandWrapper, metadata);
-                OpenClCommandQueue commandQueue = getOpenClCommandQueue(openClCommandWrapper, metadata, context);
-                FloatBuffer inputGpu = FloatBuffer.inputBuffer(openClCommandWrapper, context, input);
-                FloatBuffer outputGpu = FloatBuffer.outputBuffer(openClCommandWrapper, context, output)) {
+        try (OpenClContext context = getOpenClContext(commandWrapper, metadata);
+             OpenClCommandQueue commandQueue = getOpenClCommandQueue(commandWrapper, metadata, context);
+             FloatBuffer inputGpu = FloatBuffer.inputBuffer(commandWrapper, context, input);
+             FloatBuffer outputGpu = FloatBuffer.outputBuffer(commandWrapper, context, output)) {
 
-            KdeContext kdeContext = new KdeContext(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H, input.getLength(), outputWidth);
+            KdeContext kdeContext = new KdeContext(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H,
+                    input.getLength(), output.getLength());
             for (KdeKernel kdeKernel : kdeKernels) {
                 ProfilingData profilingData = kdeKernel.execute(kdeContext, context, commandQueue);
 
@@ -64,16 +62,40 @@ public class KernelDensityEstimation {
         }
     }
 
-    private static OpenClCommandQueue getOpenClCommandQueue(OpenClCommandWrapper openClCommandWrapper,
+    public static void main(String[] args) throws URISyntaxException, IOException {
+        OpenClSettings.enableExceptions();
+
+        FloatArray input = readInputArray();
+        float factor = PI_FACTOR / input.getLength() * H;
+
+        KernelDensityEstimation kde = new KernelDensityEstimation(input, getOutputArray(), factor);
+
+        OpenClCommandWrapper openClCommandWrapper = new OpenClCommandWrapper();
+        OpenClExecutor executor = new OpenClExecutor(openClCommandWrapper);
+        OpenClMetadata metadata = new OpenClMetadataFactory(openClCommandWrapper).createMetadata();
+
+        kde.executeKernels(openClCommandWrapper, executor, metadata);
+    }
+
+    private static FloatArray getOutputArray() {
+        int outputWidth = (int) ((X_MAX - X_MIN) / DENSITY);
+        return FloatArray.empty(outputWidth);
+    }
+
+    private static FloatArray readInputArray() {
+        return new FloatArrayReader().read("sample/big_sample.txt");
+    }
+
+    private OpenClCommandQueue getOpenClCommandQueue(OpenClCommandWrapper openClCommandWrapper,
                                                             OpenClMetadata metadata, OpenClContext context) {
         return new OpenClCommandQueue(openClCommandWrapper, context.getContext(), metadata.getDeviceId());
     }
 
-    private static OpenClContext getOpenClContext(OpenClCommandWrapper openClCommandWrapper, OpenClMetadata metadata) {
+    private OpenClContext getOpenClContext(OpenClCommandWrapper openClCommandWrapper, OpenClMetadata metadata) {
         return new OpenClContext(openClCommandWrapper, metadata.getPlatformId(), metadata.getDeviceId());
     }
 
-    private static void dumpArray(String kernelName, float[] output, boolean shouldDump) {
+    private void dumpArray(String kernelName, float[] output, boolean shouldDump) {
         String path = "dump" + output.length + kernelName + ".txt";
 
         if (shouldDump) {
