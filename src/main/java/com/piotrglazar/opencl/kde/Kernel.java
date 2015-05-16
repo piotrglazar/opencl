@@ -10,24 +10,19 @@ import com.piotrglazar.opencl.core.OpenClKernelSource;
 import com.piotrglazar.opencl.core.OpenClProgram;
 import com.piotrglazar.opencl.util.ProfilingData;
 
-public class KdeNaiveKernel implements KdeKernel {
+public abstract class Kernel {
 
-    private static final String NAME = "kde_naive";
+    protected final OpenClCommandWrapper commandWrapper;
+    protected final OpenClExecutor executor;
 
-    private final OpenClKernelSource kernelSource;
-    private final OpenClCommandWrapper openClCommandWrapper;
-    private final OpenClExecutor executor;
-
-    public KdeNaiveKernel(OpenClCommandWrapper openClCommandWrapper, OpenClExecutor executor) {
-        this.openClCommandWrapper = openClCommandWrapper;
+    protected Kernel(OpenClCommandWrapper commandWrapper, OpenClExecutor executor) {
+        this.commandWrapper = commandWrapper;
         this.executor = executor;
-        this.kernelSource = OpenClKernelSource.getKernelSourceCode("kernel", NAME);
     }
 
-    @Override
-    public ProfilingData execute(KdeContext kdeContext, OpenClContext context, OpenClCommandQueue commandQueue) {
-        try (OpenClProgram program = new OpenClProgram(openClCommandWrapper, context, kernelSource);
-             OpenClKernel kernel = new OpenClKernel(openClCommandWrapper, program, "kernelDensityEstimation")) {
+    public ProfilingData execute(Context kdeContext, OpenClContext context, OpenClCommandQueue commandQueue) {
+        try (OpenClProgram program = new OpenClProgram(commandWrapper, context, getKernelSource());
+             OpenClKernel kernel = new OpenClKernel(commandWrapper, program, "kernelDensityEstimation")) {
 
             kernel.addKernelArgument(0, kdeContext.getInputGpu());
             kernel.addKernelArgument(1, kdeContext.getOutputGpu());
@@ -38,7 +33,7 @@ public class KdeNaiveKernel implements KdeKernel {
             kernel.addKernelArgument(6, kdeContext.getInputWidth());
             kernel.addKernelArgument(7, kdeContext.getOutputWidth());
 
-            OpenClEvent event = executor.submitAndWait(commandQueue, kernel, kdeContext.getOutputWidth());
+            OpenClEvent event = execute(commandQueue, kernel, kdeContext);
             ProfilingData profilingData = executor.getProfilingData(event);
 
             executor.releaseEvent(event);
@@ -48,8 +43,9 @@ public class KdeNaiveKernel implements KdeKernel {
         }
     }
 
-    @Override
-    public String getName() {
-        return "kde_naive";
-    }
+    public abstract String getName();
+
+    protected abstract OpenClEvent execute(OpenClCommandQueue commandQueue, OpenClKernel kernel, Context context);
+
+    protected abstract OpenClKernelSource getKernelSource();
 }

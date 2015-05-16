@@ -54,14 +54,14 @@ public class KernelDensityEstimation {
              FloatBuffer inputGpu = FloatBuffer.inputBuffer(commandWrapper, context, input);
              FloatBuffer outputGpu = FloatBuffer.outputBuffer(commandWrapper, context, output)) {
 
-            KdeContext kdeContext = new KdeContext(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H,
+            Context kdeContext = new Context(inputGpu, outputGpu, output, X_MIN, factor, DENSITY, H,
                     input.getLength(), output.getLength());
-            for (KdeKernel kdeKernel : getKernels(commandWrapper, executor)) {
-                ProfilingData profilingData = kdeKernel.execute(kdeContext, context, commandQueue);
+            for (Kernel kernel : getKernels(commandWrapper, executor)) {
+                ProfilingData profilingData = kernel.execute(kdeContext, context, commandQueue);
 
-                logExecutionInformation(kdeKernel, profilingData);
+                logExecutionInformation(kernel, profilingData);
                 System.out.println("Total: " + profilingData.getDurationMillis() + " ms");
-                dumpArray(kdeKernel.getName(), output.getData(), false);
+                dumpArray(kernel.getName(), output.getData(), false);
             }
         }
     }
@@ -75,14 +75,15 @@ public class KernelDensityEstimation {
         logger.info("outputWidth={}", output.getLength());
     }
 
-    private List<KdeKernel> getKernels(OpenClCommandWrapper commandWrapper, OpenClExecutor executor) {
-        List<KdeKernel> kdeKernels = new LinkedList<>();
-        kdeKernels.add(new KdeNaiveKernel(commandWrapper, executor));
-        return kdeKernels;
+    private List<Kernel> getKernels(OpenClCommandWrapper commandWrapper, OpenClExecutor executor) {
+        List<Kernel> kernels = new LinkedList<>();
+        kernels.add(new NaiveKernel(commandWrapper, executor));
+        kernels.add(new FastKernel(commandWrapper, executor));
+        return kernels;
     }
 
-    private void logExecutionInformation(KdeKernel kdeKernel, ProfilingData profilingData) {
-        logger.info("Kernel name '{}', time {}ms", kdeKernel.getName(), profilingData.getDurationMillis());
+    private void logExecutionInformation(Kernel kernel, ProfilingData profilingData) {
+        logger.info("Kernel name '{}', time {}ms", kernel.getName(), profilingData.getDurationMillis());
     }
 
     public static void main(String[] args) throws URISyntaxException, IOException {

@@ -13,8 +13,10 @@ public class OpenClExecutor {
         this.commandWrapper = commandWrapper;
     }
 
-    public OpenClEvent submitAndWait(OpenClCommandQueue commandQueue, OpenClKernel kernel, int globalThreads) {
-        cl_event event = commandWrapper.enqueue(commandQueue.getCommandQueue(), kernel.getKernel(), globalThreads);
+    public OpenClEvent submitAndWait(OpenClCommandQueue commandQueue, OpenClKernel kernel, int globalThreads,
+                                     int localThreads) {
+        cl_event event = commandWrapper.enqueue(commandQueue.getCommandQueue(), kernel.getKernel(), globalThreads,
+                localThreads);
         commandWrapper.waitForEvents(event);
 
         return new OpenClEvent(event);

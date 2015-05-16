@@ -176,10 +176,10 @@ public class OpenClCommandWrapper {
                 Pointer.to(new int[]{value})), "clSetKernelArg");
     }
 
-    public cl_event enqueue(cl_command_queue commandQueue, cl_kernel kernel, int globalThreads) {
+    public cl_event enqueue(cl_command_queue commandQueue, cl_kernel kernel, int globalThreads, int localThreads) {
         cl_event event = new cl_event();
         verifyCallSucceeded(clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, new long[]{globalThreads},
-                new long[]{1}, 0, null, event), "clEnqueueNDRangeKernel");
+                new long[]{localThreads}, 0, null, event), "clEnqueueNDRangeKernel");
         return event;
     }
 

@@ -3,7 +3,7 @@ package com.piotrglazar.opencl.kde;
 import com.piotrglazar.opencl.util.FloatArray;
 import com.piotrglazar.opencl.util.FloatBuffer;
 
-public class KdeContext {
+public class Context {
 
     private final FloatBuffer inputGpu;
     private final FloatBuffer outputGpu;
@@ -15,8 +15,8 @@ public class KdeContext {
     private final int inputWidth;
     private final int outputWidth;
 
-    public KdeContext(FloatBuffer inputGpu, FloatBuffer outputGpu, FloatArray output, float xMin, float factor, float density, float h,
-                      int inputWidth, int outputWidth) {
+    public Context(FloatBuffer inputGpu, FloatBuffer outputGpu, FloatArray output, float xMin, float factor, float density, float h,
+                   int inputWidth, int outputWidth) {
         this.inputGpu = inputGpu;
         this.outputGpu = outputGpu;
         this.output = output;
