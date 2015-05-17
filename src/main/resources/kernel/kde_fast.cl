@@ -13,28 +13,20 @@ __kernel void kernelDensityEstimation(const __global float *input, __global  flo
     float4 tmp = (float4) (0.0f);
     int4 toPower = (int4) (2);
     int rem = 0;
+    int copySize = 0;
 
-    for (int k = 0; k < inputSize / MAX_LOCAL_COPY; ++k){
-        cp = async_work_group_copy(cache, input + offset, MAX_LOCAL_COPY, 0);
+    for (int k = 0; k < (inputSize + MAX_LOCAL_COPY - 1) / MAX_LOCAL_COPY; ++k) {
+        copySize = (offset + MAX_LOCAL_COPY < inputSize) ? MAX_LOCAL_COPY : inputSize - offset;
+        cp = async_work_group_copy(cache, input + offset, copySize, 0);
         wait_group_events(1, &cp);
 
-        for (int i = 0; i < MAX_LOCAL_COPY; ++i) {
-            tmp += exp(-0.5f * pown(((float4) (cache[i]) - xs) / h, toPower));
+        for (int i = 0; i < copySize; ++i) {
+            tmp += native_exp(-0.5f * pown(((float4) (cache[i]) - xs) / h, toPower));
         }
         
-        offset = (offset + MAX_LOCAL_COPY) % inputSize;
+        offset = (offset + copySize) % inputSize;
     }
     
-    if ((rem = inputSize % MAX_LOCAL_COPY) != 0) {
-        cp = async_work_group_copy(cache, input + offset, rem, 0);
-        wait_group_events(1, &cp);
-
-        for (int i = 0; i < rem; ++i) {
-            tmp += exp(-0.5f * pown(((float4) (cache[i]) - xs) / h, toPower));
-        }
-    }
-
-
     tmp *= (factor / h);
 
     barrier(CLK_LOCAL_MEM_FENCE);

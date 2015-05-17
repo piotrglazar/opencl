@@ -29,6 +29,7 @@ dependencies {
 	testCompile("junit:junit:4.12")
     testCompile("org.mockito:mockito-all:2.0.2-beta")
     testCompile("org.assertj:assertj-core:1.7.1")
+    testCompile("pl.pragmatists:JUnitParams:1.0.4")
 }
 
 task wrapper(type: Wrapper) {
